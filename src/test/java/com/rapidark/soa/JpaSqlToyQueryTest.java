@@ -1,30 +1,28 @@
-# rapidark-data-jpa-plus
-sqltoy 集成到 jpa
+package com.rapidark.soa;
 
-# jpa Repository
-@Repository
-public interface StaffRepository extends JpaRepository<StaffEntity,String> {
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-	@SqlToyQuery("queryByNameAndAge")
-	List<Map<String, Object>> queryListMapByNameAndAge(@Param("name") String name, @Param("age") int age);
-	
-	@SqlToyQuery("queryByNameAndAge")
-	List<StaffEntity> queryListEntityByNameAndAge(@Param("name") String name, @Param("age") int age);
-	
-	// 默认名称为：类名简称 + '_' + 方法名，此处为：StaffRepository_queryPageMapByNameAndAge
-	@SqlToyQuery
-	Page<Map<String, Object>> queryPageMapByNameAndAge(@Param("name") String name, @Param("age") int age, Pageable pageable);
-	
-	@SqlToyQuery("queryByNameAndAge")
-	Page<StaffEntity> queryPageEntityByNameAndAge(@Param("name") String name, @Param("age") int age, Pageable pageable);
-	
-	@SqlToyQuery("queryByNameAndAge")
-	Page<StaffEntity> queryPageEntityByMap(Map<String, Object> params, Pageable pageable);
-	
-}
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.test.context.junit4.SpringRunner;
 
-# 使用示例
+import com.alibaba.fastjson.JSON;
+import com.rapidark.soa.entity.StaffEntity;
+import com.rapidark.soa.repository.StaffRepository;
 
+/**
+ * @author Darkness
+ * @date 2020年10月25日 下午3:23:49
+ * @version V1.0
+ */
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = SqlToyApplication.class)
 public class JpaSqlToyQueryTest {
