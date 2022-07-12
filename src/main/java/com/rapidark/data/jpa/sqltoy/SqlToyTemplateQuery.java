@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.persistence.EntityManager;
 
@@ -19,7 +20,6 @@ import org.apache.commons.beanutils.DynaBean;
 import org.apache.commons.beanutils.DynaProperty;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.sagacity.sqltoy.dao.SqlToyLazyDao;
-import org.sagacity.sqltoy.model.PaginationModel;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.data.domain.Page;
@@ -33,8 +33,6 @@ import org.springframework.data.util.ClassTypeInformation;
 import org.springframework.data.util.TypeInformation;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
-import com.alibaba.fastjson.JSON;
 
 /**
  * <p>
@@ -96,13 +94,24 @@ public class SqlToyTemplateQuery implements RepositoryQuery {
 			if (pageable != null) {
 //                query.setFirstResult((int) pageable.getOffset());
 //                query.setMaxResults(pageable.getPageSize());
-				PaginationModel<?> result = queryPagedData(namedQueryName, pageable, paramsMap, genericType);
+				org.sagacity.sqltoy.model.Page<?> result = queryPagedData(namedQueryName, pageable, paramsMap, genericType);
 				Page<?> pageResult = new PageImpl<>(result.getRows(), pageable, result.getRecordCount());
 				return pageResult;
 			}
 		}
 		
 		List<?> result = queryData(namedQueryName, paramsMap, genericType);
+		if(this.isReturnTypeOptional()) {
+			if(result.isEmpty()) {
+				return Optional.empty();
+			}
+			if(result.size() > 1) {
+				throw new RuntimeException("query result greate than 1 row");
+			}
+			Object singleData = result.get(0);
+			return Optional.ofNullable(singleData);
+		}
+
 		return result;
 	}
 	
@@ -201,20 +210,24 @@ public class SqlToyTemplateQuery implements RepositoryQuery {
 		return result;
 	}
 	
-	private <T> PaginationModel<T> queryPagedData(String namedQueryName, Pageable pageable, Map<String, Object> paramsMap, Class<T> clazz) {
-		PaginationModel<T> pageModel = new PaginationModel<>();
+	private <T> org.sagacity.sqltoy.model.Page<T> queryPagedData(String namedQueryName, Pageable pageable, Map<String, Object> paramsMap, Class<T> clazz) {
+		org.sagacity.sqltoy.model.Page<T> pageModel = new org.sagacity.sqltoy.model.Page<>();
 		pageModel.setPageNo(pageable.getPageNumber() + 1);
 		pageModel.setPageSize(pageable.getPageSize());
 
-		PaginationModel<T> result = sqlToyLazyDao.findPageBySql(pageModel, namedQueryName,
+		org.sagacity.sqltoy.model.Page<T> result = sqlToyLazyDao.findPageBySql(pageModel, namedQueryName,
 				paramsMap, clazz);
-		System.out.println(JSON.toJSONString(result));
+//		System.out.println(JSON.toJSONString(result));
 		return result;
 	}
 	
 	@Override
 	public JpaQueryMethod getQueryMethod() {
 		return queryMethod;
+	}
+
+	public boolean isReturnTypeOptional() {
+		return this.method.getReturnType() == Optional.class;
 	}
 	
 	public String getNamedQueryName() {
